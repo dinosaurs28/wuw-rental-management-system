@@ -12,6 +12,7 @@ import BranchManagerResetPasswordPage from "./pages/auth/BranchManagerResetPassw
 import AdminForgotPasswordPage from "./pages/auth/AdminForgotPasswordPage";
 import AdminResetPasswordPage from "./pages/auth/AdminResetPasswordPage";
 import PortalPage from "./pages/auth/PortalPage";
+import { LandingPage } from "@/components/landing/LandingPage";
 import AppVehicleLinkPage from "./pages/AppVehicleLinkPage";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
 import { PublicRoute } from "@/components/auth/PublicRoute";
@@ -160,10 +161,10 @@ function App() {
       <Toaster richColors position="top-center" />
       <Routes>
         {/* Public Routes - No auth required  */}
-        {/* Nov 21 2026: the website is staff-only — customers book in the app.
-            The home page is the staff / manager / admin sign-in chooser, and
-            every old customer page lands there. */}
-        <Route path="/" element={<PortalPage />} />
+        {/* Nov 2026: customers book and sign in only in the app. The home page
+            explains the service and links to the stores; staff, managers and
+            admins use /portal. Old customer pages land on the home page. */}
+        <Route path="/" element={<LandingPage />} />
         {CUSTOMER_WEB_PATHS.map((path) => (
           <Route key={path} path={path} element={<Navigate to="/" replace />} />
         ))}

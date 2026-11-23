@@ -92,3 +92,26 @@ export async function recordDeferredLink(
     window.clearTimeout(timer);
   }
 }
+
+/**
+ * The store listing for this device (Play on Android, App Store on iOS), or
+ * null on a desktop browser — where the page shows both store buttons instead.
+ */
+export function storeUrlForThisDevice(): string | null {
+  const platform = detectLinkPlatform();
+  if (platform === "android") return PLAY_STORE_URL;
+  if (platform === "ios") return APP_STORE_URL;
+  return null;
+}
+
+/** "Get the app": straight to this phone's store, else scroll to the store buttons (#get-app). */
+export function openGetTheApp(): void {
+  const url = storeUrlForThisDevice();
+  if (url) {
+    window.location.href = url;
+    return;
+  }
+  const target = document.getElementById("get-app");
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+  else window.location.href = "/#get-app";
+}

@@ -1,9 +1,8 @@
 import { Navbar } from "./Navbar";
-import { SearchForm } from "./SearchForm";
 import { Footer } from "./Footer";
 import { HeroOfferSlider } from "./HeroOfferSlider";
 import { StoreButtons } from "./StoreButtons";
-import { Timer, CarFront, ClipboardCheck } from "lucide-react";
+import { Timer, CarFront, ClipboardCheck, Smartphone, CalendarCheck, KeyRound } from "lucide-react";
 import { ADVANCE_BOOKING_DAYS, MAX_RENTAL_DAYS } from "@/utils/bookingPickers";
 
 const FEATURES = [
@@ -21,6 +20,25 @@ const FEATURES = [
     icon: ClipboardCheck,
     title: "Checked at pickup and return",
     body: "We photograph the vehicle and note fuel and kilometres when you collect and return it, so your bill is easy to check.",
+  },
+];
+
+// How booking works — all of it happens in the app (the website doesn't take bookings).
+const STEPS = [
+  {
+    icon: Smartphone,
+    title: "Get the app",
+    body: "Download WUW Rentals from Google Play or the App Store and create your account.",
+  },
+  {
+    icon: CalendarCheck,
+    title: "Choose and book",
+    body: "Pick your dates and a vehicle, upload your driving licence and pay online to confirm.",
+  },
+  {
+    icon: KeyRound,
+    title: "Pick up and go",
+    body: "Collect the vehicle at the branch. Extend your rental or check your bill any time in the app.",
   },
 ];
 
@@ -54,10 +72,20 @@ export const LandingPage = () => {
             real (variable) height then pushes the heading down on every screen,
             instead of overlapping it. */}
         <section className="bg-[#FF5F00] pb-16 px-4 text-center">
-            {/* Floating Search Form Widget */}
+            {/* Floating "book in the app" card — where the search form used to
+                sit (bookings are app-only), pulled up over the hero the same way */}
             <div className="relative z-20 -mt-32 sm:-mt-36 md:-mt-40 mb-12 md:mb-20 px-0 sm:px-2 md:px-6 lg:px-12 flex justify-center">
-               <div className="w-full max-w-[1300px]">
-                  <SearchForm />
+               <div className="w-full max-w-[1300px] rounded-3xl bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.35)] p-6 sm:p-8 md:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6 text-left">
+                  <div className="min-w-0">
+                     <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-[#FF5F00]">Cars &amp; bikes on rent · Manipal</p>
+                     <h1 className="mt-2 text-3xl md:text-5xl font-black text-[#1A1A1A] uppercase tracking-tighter leading-none">
+                        Book your ride in the app
+                     </h1>
+                     <p className="mt-3 max-w-xl text-base md:text-lg font-medium text-zinc-600">
+                        Bookings, payments and extensions all happen in the WUW Rentals app. Download it to get started.
+                     </p>
+                  </div>
+                  <StoreButtons tone="light" className="shrink-0" />
                </div>
             </div>
 
@@ -86,15 +114,38 @@ export const LandingPage = () => {
             </ul>
         </section>
 
+        {/* How it works */}
+        <section className="bg-white pb-12 md:pb-20 px-4 md:px-6 lg:px-8">
+            <div className="max-w-[1100px] mx-auto">
+                <h2 className="text-2xl md:text-4xl font-black text-[#1A1A1A] uppercase tracking-tighter leading-none mb-8 md:mb-12">
+                    How it works
+                </h2>
+                <ol className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    {STEPS.map(({ icon: Icon, title, body }, i) => (
+                        <li key={title} className="relative rounded-3xl border border-zinc-200 p-6 md:p-8">
+                            <span className="absolute top-6 right-6 text-5xl font-black leading-none text-zinc-100 select-none" aria-hidden="true">
+                                {i + 1}
+                            </span>
+                            <span className="relative flex size-12 items-center justify-center rounded-2xl bg-[#1A1A1A] text-white">
+                                <Icon className="size-6" strokeWidth={2} aria-hidden="true" />
+                            </span>
+                            <h3 className="relative mt-5 text-lg md:text-xl font-bold tracking-tight text-[#1A1A1A]">{title}</h3>
+                            <p className="relative mt-1.5 text-[15px] md:text-base leading-relaxed text-zinc-600">{body}</p>
+                        </li>
+                    ))}
+                </ol>
+            </div>
+        </section>
+
         {/* Mobile app */}
-        <section className="px-4 md:px-6 lg:px-8 pb-16">
+        <section id="get-app" className="px-4 md:px-6 lg:px-8 pb-16 scroll-mt-28">
             <div className="max-w-[1200px] mx-auto rounded-3xl bg-[#F4F4F4] p-6 md:p-12 flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8">
                 <div>
                     <h2 className="text-2xl md:text-4xl font-black text-[#1A1A1A] uppercase tracking-tighter leading-none mb-3">
                         Get the WUW Rentals app
                     </h2>
                     <p className="text-gray-600 font-medium max-w-xl">
-                        Book, extend and keep track of your rentals from your phone.
+                        Book, pay, extend and keep track of your rentals from your phone. Booking is only available in the app.
                     </p>
                 </div>
                 <StoreButtons tone="light" className="shrink-0" />

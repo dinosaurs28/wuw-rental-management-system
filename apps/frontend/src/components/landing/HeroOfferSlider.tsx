@@ -7,7 +7,8 @@ import { ArrowRight, Check, ChevronLeft, ChevronRight, Copy, Pause, Play, Ticket
 import { offersPublicService, type PublicOffer } from "@/services/offers.service";
 import { useSearchStore } from "@/store/search.store";
 import { useOfferCouponStore } from "@/store/offerCoupon.store";
-import { copyText, formatIstDay, formatOfferDiscount, offerHref } from "@/lib/offers";
+import { copyText, formatIstDay, formatOfferDiscount } from "@/lib/offers";
+import { openGetTheApp } from "@/lib/deepLink";
 import { cn } from "@/lib/utils";
 
 // Landing hero (#15): live offer posters as an auto-advancing slider (5 s,
@@ -184,17 +185,18 @@ function OfferSlide({
   active: boolean;
 }) {
   const navigate = useNavigate();
-  const setSearchCriteria = useSearchStore((s) => s.setSearchCriteria);
   const hasCta = !!(offer.ctaLabel || offer.linkTarget);
-  const ctaLabel = offer.ctaLabel ?? "View vehicle";
-  const href = offerHref(offer.linkType, offer.linkTarget);
+  const ctaLabel = offer.ctaLabel ?? "Get the app";
 
+  // Booking is app-only (Nov 2026): a poster linked to one vehicle opens it in
+  // the app (/app/vehicle/:id hands off to the app or its store); anything else
+  // goes to this phone's store, or the store buttons on a desktop.
   const openLink = () => {
-    // No vehicle link: the vehicles list, scoped to the poster's branch
-    if (!offer.linkTarget && offer.branch) {
-      setSearchCriteria({ branchPublicId: offer.branch.publicId });
+    if (offer.linkType === "VEHICLE" && offer.linkTarget) {
+      navigate(`/app/vehicle/${encodeURIComponent(offer.linkTarget)}`);
+      return;
     }
-    navigate(href);
+    openGetTheApp();
   };
 
   const coupon = offer.couponCode && offer.coupon ? offer.coupon : null;
