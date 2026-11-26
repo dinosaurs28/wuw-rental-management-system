@@ -32,6 +32,7 @@ import { financialStateService } from "./financial-state.service.js";
 import { LEGACY_DEPOSIT_REFUND_KEY_PREFIX } from "./safety-deposit.service.js";
 import { syncLegacyReturnInvoice } from "../invoice-finalization.service.js";
 import { isCashRefundOutsideShift, isCustomerRefundKey, isDropOtherRefundKey } from "../booking/customer-refund-rules.js";
+import { isAwaitingVerification } from "./cash-shift-rules.js";
 import {
   PaymentVoidError,
   SHIFT_CLOSED_VOID_WARNING,
@@ -245,9 +246,13 @@ export async function voidPayment(req: Request, scope: PaymentStaffScope, transa
       // The shift FOR SHARE BEFORE the payment row: a shift close takes the shift
       // FOR UPDATE and then its payment rows FOR UPDATE, so locking the row first
       // and the shift second could deadlock with it.
-      const lockShift = async (shiftId: number) =>
-        (await tx.$queryRaw<{ status: string }[]>`
-          SELECT "status"::text AS "status" FROM "CashShift" WHERE "id" = ${shiftId} FOR SHARE`)[0] ?? null;
+      // A shift auto-closed at day end whose cash the manager hasn't verified yet
+      // (isAwaitingVerification) is not settled: a void there still moves its figures
+      const lockShift = async (shiftId: number) => {
+        const r = (await tx.$queryRaw<{ status: string; autoClosedAt: Date | null; closedById: number | null }[]>`
+          SELECT "status"::text AS "status", "autoClosedAt", "closedById" FROM "CashShift" WHERE "id" = ${shiftId} FOR SHARE`)[0];
+        return r ? { status: isAwaitingVerification(r) ? "OPEN" : r.status } : null;
+      };
       let shift: { status: string } | null = found.cashShiftId ? await lockShift(found.cashShiftId) : null;
       await tx.$queryRaw`SELECT "id" FROM "PaymentTransaction" WHERE "id" = ${found.id} FOR UPDATE`;
       const t = await tx.paymentTransaction.findUniqueOrThrow({ where: { id: found.id }, select: TXN_SELECT });

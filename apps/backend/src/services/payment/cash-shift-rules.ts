@@ -22,6 +22,7 @@
  *                (negative = short, positive = over; a note is required ≠ 0)
  */
 import Decimal from "decimal.js";
+import { DateTime } from "luxon";
 import { StatusCode } from "../../types/statusCode.js";
 
 export const REFUND_PURPOSES = ["OVERPAYMENT_REFUND", "CANCELLATION_REFUND"] as const;
@@ -184,8 +185,10 @@ export function decideClose(p: {
   cashReceived: number | string | Decimal;
   note?: string | null;
   expectedSeen?: number | string | null;
+  /** Auto-closed at day end with cash still to hand over (isAwaitingVerification): the manager may verify & close it. */
+  awaitingVerification?: boolean;
 }): CloseDecision {
-  if (p.status !== "OPEN") {
+  if (p.status !== "OPEN" && !p.awaitingVerification) {
     throw new CashShiftError(StatusCode.CONFLICT, "SHIFT_NOT_OPEN", "This shift is already closed. Closed shifts can't be changed.", {
       shiftStatus: p.status,
     });
@@ -353,4 +356,104 @@ export function assertSelfClosable(e: SelfCloseEligibility): void {
     cashRefunded: e.cashRefunded,
     openingCash: e.openingCash,
   });
+}
+
+// ── Automatic close at the end of the day (Nov 2026) ─────────────────────────
+/*
+ * Every OPEN shift is closed by the server once the IST day it opened on is
+ * over (jobs/cashShiftAutoClose.worker.ts). The day ends at the auto-close time
+ * (CASH_SHIFT_AUTO_CLOSE_TIME, "HH:mm" IST, default 00:00 = midnight): a shift
+ * opened before the most recent such instant is due.
+ *
+ * The system never counts or approves cash, so:
+ *   - no cash in the shift (selfCloseEligibility OK: no cash collected, no cash
+ *     refund, no opening float) → final close, exactly like a self-close:
+ *     CLOSED, all figures 0;
+ *   - cash in the shift → closed for collecting (no payment can link to it, the
+ *     executive opens a new shift next day) but NOT reconciled: status
+ *     DISCREPANCY_FLAGGED ("needs the manager"), closedById null, cash received
+ *     0 and difference 0 (nothing was counted — never a made-up shortage), the
+ *     expected cash snapshotted. COLLECTED payments stay COLLECTED. The branch
+ *     manager then runs the usual "Verify & close" on it (isAwaitingVerification),
+ *     which confirms the payments and records the cash received.
+ */
+
+export const DEFAULT_AUTO_CLOSE_TIME = "00:00";
+export const AUTO_CLOSE_ZONE = "Asia/Kolkata";
+
+/** "HH:mm" (24 h) → hour/minute; anything else → the default (midnight). */
+export function parseAutoCloseTime(raw: string | null | undefined): { hour: number; minute: number; label: string } {
+  const m = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(raw ?? "");
+  if (m) {
+    const hour = Number(m[1]);
+    const minute = Number(m[2]);
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      return { hour, minute, label: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}` };
+    }
+  }
+  return { hour: 0, minute: 0, label: DEFAULT_AUTO_CLOSE_TIME };
+}
+
+/**
+ * The most recent end-of-day instant at or before `now`: today's auto-close time
+ * in IST when it has passed, else yesterday's. Shifts opened before it are due.
+ */
+export function autoCloseCutoff(now: Date, time: string | null | undefined = DEFAULT_AUTO_CLOSE_TIME, zone = AUTO_CLOSE_ZONE): Date {
+  const { hour, minute } = parseAutoCloseTime(time);
+  const local = DateTime.fromJSDate(now, { zone });
+  let cutoff = local.set({ hour, minute, second: 0, millisecond: 0 });
+  if (cutoff.toMillis() > now.getTime()) cutoff = cutoff.minus({ days: 1 });
+  return cutoff.toJSDate();
+}
+
+/** An OPEN shift opened before the cutoff (autoCloseCutoff) is closed automatically. */
+export function isDueForAutoClose(shift: { status: string; openedAt: Date }, cutoff: Date): boolean {
+  return shift.status === "OPEN" && shift.openedAt.getTime() < cutoff.getTime();
+}
+
+/** Auto-closed with cash in it and not yet verified by a manager. */
+export function isAwaitingVerification(s: { status: string; autoClosedAt?: Date | null; closedById?: number | null }): boolean {
+  // Only a shift auto-closed WITH cash waits (DISCREPANCY_FLAGGED, no manager
+  // yet); a cash-free auto-close is CLOSED for good (autoClosePlan).
+  return s.status === "DISCREPANCY_FLAGGED" && !!s.autoClosedAt && !s.closedById;
+}
+
+export interface AutoClosePlan {
+  kind: "NO_CASH" | "AWAITING_VERIFICATION";
+  status: "CLOSED" | "DISCREPANCY_FLAGGED";
+  cashCollected: string;
+  cashRefunded: string;
+  expectedTotal: string;
+  /** Nothing is counted by the system: cash received and difference stay 0. */
+  actualTotal: "0.00";
+  discrepancy: "0.00";
+}
+
+/** What the auto-close writes on a shift (null when it is no longer OPEN). */
+export function autoClosePlan(p: {
+  status: string;
+  figures: Pick<ShiftFigures, "openingCash" | "cashCollected" | "cashRefunded">;
+}): AutoClosePlan | null {
+  if (p.status !== "OPEN") return null;
+  const e = selfCloseEligibility(p);
+  if (e.canSelfClose) {
+    return {
+      kind: "NO_CASH",
+      status: "CLOSED",
+      cashCollected: "0.00",
+      cashRefunded: "0.00",
+      expectedTotal: "0.00",
+      actualTotal: "0.00",
+      discrepancy: "0.00",
+    };
+  }
+  return {
+    kind: "AWAITING_VERIFICATION",
+    status: "DISCREPANCY_FLAGGED",
+    cashCollected: e.cashCollected,
+    cashRefunded: e.cashRefunded,
+    expectedTotal: e.cashToHandOver,
+    actualTotal: "0.00",
+    discrepancy: "0.00",
+  };
 }

@@ -954,6 +954,54 @@ export const notifyEvents = {
     });
   },
 
+  /**
+   * The system closed a cash shift at the end of its IST day (Nov 2026,
+   * jobs/cashShiftAutoClose.worker.ts). The executive gets SHIFT_CLOSED (open a
+   * new shift; hand the cash over if there was any). When cash is still to be
+   * handed over, the branch managers get a SHIFT_DISCREPANCY-type alert (it
+   * links to Cash Shift) to verify & close it. Once per shift.
+   */
+  shiftAutoClosed(args: { shiftId: number }): Promise<void> {
+    return safely("shiftAutoClosed", async () => {
+      const shift = await prisma.cashShift.findUnique({
+        where: { id: args.shiftId },
+        select: {
+          publicId: true,
+          branchId: true,
+          status: true,
+          employeeId: true,
+          closedById: true,
+          autoClosedAt: true,
+          expectedTotal: true,
+          employee: { select: { name: true } },
+        },
+      });
+      if (!shift || shift.status === "OPEN" || !shift.autoClosedAt) return;
+      const awaiting = !shift.closedById && shift.status === "DISCREPANCY_FLAGGED";
+      await notify({
+        type: "SHIFT_CLOSED",
+        recipients: [shift.employeeId],
+        branchId: shift.branchId,
+        data: { entity: "CashShift", entityPublicId: shift.publicId },
+        dedupeKey: `shift-auto-closed:${shift.publicId}`,
+        title: "Your cash shift was closed automatically",
+        body: awaiting
+          ? `Your shift was closed at the end of the day. Hand over ${money(shift.expectedTotal)} cash to your branch manager to verify it. Open a new shift to collect again.`
+          : "Your shift was closed at the end of the day (no cash in it). Open a new shift to collect again.",
+      });
+      if (!awaiting) return;
+      await notify({
+        type: "SHIFT_DISCREPANCY",
+        recipients: [{ branchId: shift.branchId, roles: MANAGER_ONLY }],
+        branchId: shift.branchId,
+        data: { entity: "CashShift", entityPublicId: shift.publicId },
+        dedupeKey: `shift-auto-closed-verify:${shift.publicId}`,
+        title: "Cash shift auto-closed — verify the cash",
+        body: `${shift.employee.name}'s shift was closed at the end of the day with ${money(shift.expectedTotal)} cash to hand over. Verify & close it in Cash Shift.`,
+      });
+    });
+  },
+
   /** A PICKED_UP booking is past its return time (worker). Once per endAt. */
   returnOverdue(args: { bookingId: number }): Promise<void> {
     return safely("returnOverdue", async () => {

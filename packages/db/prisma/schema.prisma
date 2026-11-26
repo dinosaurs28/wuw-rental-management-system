@@ -2123,6 +2123,12 @@ model CashShift {
   // Oct 2026; since Nov 2026 an executive's self-close of a cash-free shift sets
   // it to the executive (actualTotal/discrepancy 0, no reconciler).
   closedById            Int?
+  // Nov 2026: closed by the system at the end of its IST day (cash-shift
+  // auto-close). With no cash in it the close is final (CLOSED, zeros); with
+  // cash it is closed for collecting (status DISCREPANCY_FLAGGED, closedById
+  // null, cash received 0) and waits for the branch manager's Verify & close,
+  // which then sets closedById / reconciledAt like any manager close.
+  autoClosedAt          DateTime?
 
   employee              User            @relation("ShiftEmployee", fields: [employeeId], references: [id])
   branch                Branch          @relation(fields: [branchId], references: [id])

@@ -1,3 +1,4 @@
+import type { ProofPhotoInfo } from "@/components/payment/counter/ProofPhotoThumb";
 import apiClient from "@/lib/axios";
 import type { RazorpayOrder } from "@/lib/razorpay";
 import type { BranchScheduleConfig } from "@/services/branch.service";
@@ -204,6 +205,34 @@ export interface BookingExtension extends ExtensionGstSplit {
   actorRole: string;
   notes?: string;
   createdAt: string;
+  // Additive (Nov 26 2026, branch list only; absent on older servers)
+  bookingStatus?: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  vehicle?: { regNo: string; make: string; model: string } | null;
+  payment?: ExtensionPayment | null;
+}
+
+/** The payment taken for an extension; COLLECTED = waiting for the manager to confirm. */
+export interface ExtensionPayment {
+  publicId: string;
+  status: "INITIATED" | "COLLECTED" | "CONFIRMED" | "REJECTED" | "VOIDED" | string;
+  method: string;
+  amount: string;
+  cashAmount: string;
+  onlineAmount: string;
+  onlineGateway: string | null;
+  isUpi: boolean;
+  isCard: boolean;
+  onlineTransactionRef: string | null;
+  collectedAt: string | null;
+  confirmedAt: string | null;
+  collectedByName: string | null;
+  rejectionReason: string | null;
+  notes: string | null;
+  proofPhoto: ProofPhotoInfo | null;
+  proofPhotoUrl: string | null;
+  proofs: ProofPhotoInfo[];
 }
 
 export interface DisplacedBooking {

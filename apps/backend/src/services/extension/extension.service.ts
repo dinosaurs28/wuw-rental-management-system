@@ -32,7 +32,14 @@ import { extensionLockService } from "./extension-lock.service.js";
 import { redis } from "../../lib/redisconfig.js";
 import { invalidateVehicleAvailability } from "../../utils/cache/vehicleCacheKeys.js";
 import { claimUtr, lockShiftForPayment } from "../payment/counter-guard.service.js";
-import { claimCounterUpi, proofPhotosCreate, type CounterUpi } from "../payment/payment-proof.service.js";
+import {
+  claimCounterUpi,
+  proofPhotoFields,
+  proofPhotosCreate,
+  PROOF_FILE_RELATION_SELECT,
+  PROOF_PHOTOS_RELATION_SELECT,
+  type CounterUpi,
+} from "../payment/payment-proof.service.js";
 import { addFleetCredit, voidPendingCreditOnCancel } from "../payment/customer-credit.service.js";
 import { notifyEvents } from "../notification/notification.events.js";
 import { discountApplicationService } from "../discount/discount-application.service.js";
@@ -1424,18 +1431,75 @@ class ExtensionService {
         skip,
         take: pageSize,
         include: {
-          booking: { select: { publicId: true, rentalPeriodType: true } },
+          booking: {
+            select: {
+              publicId: true,
+              rentalPeriodType: true,
+              status: true,
+              customer: { select: { user: { select: { name: true, phone: true } } } },
+              items: { select: { vehicle: { select: { regNo: true, make: true, model: true } } }, take: 1 },
+            },
+          },
+          paymentTransaction: {
+            select: {
+              publicId: true,
+              status: true,
+              method: true,
+              totalAmount: true,
+              cashAmount: true,
+              onlineAmount: true,
+              onlineGateway: true,
+              onlineTransactionRef: true,
+              collectedAt: true,
+              confirmedAt: true,
+              rejectionReason: true,
+              notes: true,
+              collectedBy: { select: { name: true } },
+              proofFile: PROOF_FILE_RELATION_SELECT,
+              proofPhotos: PROOF_PHOTOS_RELATION_SELECT,
+            },
+          },
         },
       }),
       prisma.bookingExtension.count({ where }),
     ]);
 
-    const extensions = raw.map(({ booking, ...ext }) => ({
+    const extensions = await Promise.all(raw.map(async ({ booking, paymentTransaction: txn, ...ext }) => ({
       ...ext,
       bookingPublicId: booking.publicId,
       // A monthly booking's extension is a renewal (client TODO 7) — "Renewal" in history
       isRenewal: booking.rentalPeriodType === RentalPeriodType.MONTHLY,
-    }));
+      // Additive (Nov 26 2026): what the manager needs to check and confirm
+      // the extension from the Extensions page (the payment is confirmed with
+      // the same /cash/:publicId/confirm as Settlements).
+      bookingStatus: booking.status,
+      customerName: booking.customer?.user?.name ?? null,
+      customerPhone: booking.customer?.user?.phone ?? null,
+      vehicle: booking.items[0]?.vehicle ?? null,
+      payment: txn
+        ? {
+            publicId: txn.publicId,
+            status: txn.status,
+            method: txn.method,
+            amount: Number(txn.totalAmount).toFixed(2),
+            cashAmount: Number(txn.cashAmount).toFixed(2),
+            onlineAmount: Number(txn.onlineAmount).toFixed(2),
+            onlineGateway: txn.onlineGateway ?? null,
+            isUpi: String(txn.onlineGateway ?? "").toUpperCase() === "UPI",
+            isCard: isCardGateway(txn.onlineGateway),
+            onlineTransactionRef: txn.onlineTransactionRef ?? null,
+            collectedAt: txn.collectedAt?.toISOString() ?? null,
+            confirmedAt: txn.confirmedAt?.toISOString() ?? null,
+            collectedByName: txn.collectedBy?.name ?? null,
+            rejectionReason: txn.rejectionReason ?? null,
+            notes: txn.notes ?? null,
+            // Proof photos are only signed for a payment still waiting for the manager
+            ...(txn.status === "COLLECTED"
+              ? await proofPhotoFields(txn.proofFile, txn.proofPhotos)
+              : { proofPhoto: null, proofPhotoUrl: null, proofs: [] }),
+          }
+        : null,
+    })));
 
     return { extensions, total, page, pageSize };
   }

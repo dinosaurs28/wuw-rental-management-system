@@ -18,6 +18,9 @@ import {
   shiftFigures,
   selfCloseEligibility,
   assertSelfClosable,
+  autoClosePlan,
+  isAwaitingVerification,
+  isDueForAutoClose,
   REFUND_PURPOSES,
   type ShiftTxnRow,
 } from "./cash-shift-rules.js";
@@ -129,6 +132,16 @@ export interface ShiftView {
   closedBySelf: boolean;
   /** Nov 2026 self-close: the executive closed it with no cash in the shift (closedById = the executive). */
   selfClosedNoCash: boolean;
+  // ── Additive (Nov 2026, automatic close at the end of the IST day) ──
+  /** Closed by the system at day end (cash-free, or still awaiting the manager's verify). */
+  autoClosed: boolean;
+  autoClosedAt: Date | null;
+  /**
+   * Auto-closed with cash still to hand over: no longer collecting, but the
+   * manager has not verified it yet — "Verify & close" works on it. Its money
+   * figures are live (like an open shift) until then.
+   */
+  awaitingVerification: boolean;
 }
 
 export interface ShiftDayTotals {
@@ -149,6 +162,8 @@ export interface ShiftDayTotals {
   cardCollected: string;
   /** Closed shifts flagged legacyVariance — their variance is not in `variance`. */
   legacyCount: number;
+  /** Additive (Nov 2026): auto-closed at day end with cash awaiting the manager's verify (not in flaggedCount). */
+  awaitingVerificationCount: number;
 }
 
 export interface PaginatedShifts {
@@ -162,6 +177,8 @@ export interface PaginatedShifts {
   summary: ShiftDayTotals;
   /** Shifts open right now in this scope, whatever the filters. */
   openNowCount: number;
+  /** Additive (Nov 2026): auto-closed shifts in this scope still awaiting the manager's verify & close. */
+  awaitingVerificationCount: number;
   filters: {
     status: string | null;
     from: string | null;
@@ -189,6 +206,8 @@ export interface ShiftListFilters {
 }
 
 const ZERO = new Decimal(0);
+/** closedByName of a shift the system closed at day end (and no manager has verified since). */
+const AUTO_CLOSED_BY = "Auto-closed (end of day)";
 const MAX_RANGE_DAYS = 366;
 const MAX_DAILY_ROWS = 400;
 
@@ -230,8 +249,13 @@ const sqlTs = (d: Date): string => d.toISOString().replace("T", " ").replace("Z"
 
 const MONEY_IN = Prisma.sql`t."purpose" NOT IN ('OVERPAYMENT_REFUND', 'CANCELLATION_REFUND')`;
 const MONEY_OUT = Prisma.sql`t."purpose" IN ('OVERPAYMENT_REFUND', 'CANCELLATION_REFUND')`;
+/** isAwaitingVerification in SQL, for a CashShift alias (auto-closed with cash, not yet verified). */
+const awaitingSql = (alias: string) =>
+  Prisma.sql`(${Prisma.raw(`${alias}."status"::text = 'DISCREPANCY_FLAGGED' AND ${alias}."autoClosedAt" IS NOT NULL AND ${alias}."closedById" IS NULL`)})`;
+const AWAITING_WHERE: Prisma.CashShiftWhereInput = { status: { not: "OPEN" }, autoClosedAt: { not: null }, closedById: null };
 // Voided after its shift closed: it was live at close, and a closed shift's figures never move
-const FROZEN_VOID = Prisma.sql`(t."status" = 'VOIDED' AND cs."closedAt" IS NOT NULL AND t."voidedAt" > cs."closedAt")`;
+// (an auto-closed shift awaiting the manager's verify is not settled yet: its figures still move)
+const FROZEN_VOID = Prisma.sql`(t."status" = 'VOIDED' AND cs."closedAt" IS NOT NULL AND t."voidedAt" > cs."closedAt" AND NOT ${awaitingSql("cs")})`;
 
 /**
  * Per-shift live totals from linked PaymentTransactions — the definition of
@@ -412,15 +436,15 @@ class CashShiftService {
     // Fleet Executives never close (old builds still call it): 403 before any lookup
     assertCanCloseShift({ role: actor.actorRole, branchId: actor.actorBranchId }, { branchId: actor.actorBranchId });
 
-    const { shift, updated, figures, decision, confirmedRows } = await prisma.$transaction(
+    const { shift, updated, figures, decision, confirmedRows, wasAutoClosed } = await prisma.$transaction(
       async (tx) => {
         const found = await tx.cashShift.findUnique({ where: { publicId } });
         if (!found) throw new CashShiftError(StatusCode.NOT_FOUND, "SHIFT_NOT_FOUND", "Cash shift not found.");
         assertCanCloseShift({ role: actor.actorRole, branchId: actor.actorBranchId }, found);
 
         await this.lockEmployee(found.employeeId, tx);
-        const [row] = await tx.$queryRaw<{ status: string }[]>`
-          SELECT "status"::text AS "status" FROM "CashShift" WHERE "id" = ${found.id} FOR UPDATE`;
+        const [row] = await tx.$queryRaw<{ status: string; autoClosedAt: Date | null; closedById: number | null }[]>`
+          SELECT "status"::text AS "status", "autoClosedAt", "closedById" FROM "CashShift" WHERE "id" = ${found.id} FOR UPDATE`;
 
         // The shift's rows, locked: a confirm / reject / void racing the close waits for it
         const rows = await tx.$queryRaw<Array<ShiftTxnRow & {
@@ -440,6 +464,8 @@ class CashShiftService {
           cashReceived: input.cashReceived,
           note: input.note,
           expectedSeen: input.expectedSeen,
+          // Auto-closed at day end with cash: the manager verifies & closes it now
+          awaitingVerification: row ? isAwaitingVerification(row) : isAwaitingVerification(found),
         });
 
         // Verified at the handover: the shift's COLLECTED money becomes CONFIRMED
@@ -468,7 +494,7 @@ class CashShiftService {
           },
         });
 
-        return { shift: found, updated: saved, figures: figs, decision: dec_, confirmedRows: confirmed };
+        return { shift: found, updated: saved, figures: figs, decision: dec_, confirmedRows: confirmed, wasAutoClosed: !!row?.autoClosedAt };
       },
       { timeout: 30000 },
     );
@@ -498,7 +524,7 @@ class CashShiftService {
       description: `Cash shift of ${employeeName} closed by ${actor.actorName}. Opening: ₹${money(figures.openingCash)}, Collected: ₹${money(figures.cashCollected)}, Refunded: ₹${money(figures.cashRefunded)}, Expected: ₹${money(decision.expectedCash)}, Received: ₹${money(decision.cashReceived)}, Difference: ₹${money(diff)}`,
       entity: "CashShift",
       entityId: shift.publicId,
-      before: { status: "OPEN" },
+      before: wasAutoClosed ? { status: shift.status, autoClosedAt: shift.autoClosedAt, awaitingVerification: true } : { status: "OPEN" },
       after: {
         status: updated.status,
         openingCash: money(figures.openingCash),
@@ -635,6 +661,110 @@ class CashShiftService {
     return { shift: updated, pendingNonCash };
   }
 
+  /**
+   * Automatic close at the end of the shift's IST day (Nov 2026; rules and
+   * meaning: autoClosePlan in cash-shift-rules.ts). Run by
+   * jobs/cashShiftAutoClose.worker.ts. Same lock order as the other closes (the
+   * executive's advisory lock, the shift row FOR UPDATE, its payment rows FOR
+   * UPDATE), so a payment being written finishes first and is counted; one
+   * arriving after finds no OPEN shift. Re-checks OPEN + opened before the
+   * cutoff under the lock: safe to run from several processes at once.
+   * Confirms nothing — the system never approves money.
+   * Returns null when the shift was no longer due (closed meanwhile).
+   */
+  async autoClose(
+    shiftId: number,
+    cutoff: Date,
+  ): Promise<{ shift: CashShift; kind: "NO_CASH" | "AWAITING_VERIFICATION" } | null> {
+    const out = await prisma.$transaction(
+      async (tx) => {
+        const found = await tx.cashShift.findUnique({ where: { id: shiftId } });
+        if (!found) return null;
+        await this.lockEmployee(found.employeeId, tx);
+        const [row] = await tx.$queryRaw<{ status: string; openingCash: Prisma.Decimal; openedAt: Date }[]>`
+          SELECT "status"::text AS "status", "openingCash", "openedAt" FROM "CashShift" WHERE "id" = ${found.id} FOR UPDATE`;
+        if (!row || !isDueForAutoClose({ status: row.status, openedAt: row.openedAt }, cutoff)) return null;
+
+        const rows = await tx.$queryRaw<Array<ShiftTxnRow & { id: number }>>`
+          SELECT "id", "purpose"::text AS "purpose", "status"::text AS "status", "cashAmount", "onlineAmount"
+          FROM "PaymentTransaction" WHERE "cashShiftId" = ${found.id}
+          ORDER BY "id"
+          FOR UPDATE`;
+        const figs = shiftFigures(row.openingCash, rows);
+        const plan = autoClosePlan({ status: row.status, figures: figs });
+        if (!plan) return null;
+
+        const now = new Date();
+        const saved = await tx.cashShift.update({
+          where: { id: found.id },
+          data: {
+            status: plan.status,
+            closedAt: now,
+            autoClosedAt: now,
+            closedById: null,
+            cashCollected: plan.cashCollected,
+            cashRefunded: plan.cashRefunded,
+            expectedTotal: plan.expectedTotal,
+            actualTotal: plan.actualTotal,
+            discrepancy: plan.discrepancy,
+            discrepancyExplanation: null,
+          },
+        });
+        return { found, saved, plan, nonCash: figs.nonCashCollected, pending: rows.filter((r) => r.status === "COLLECTED").length };
+      },
+      { timeout: 30000 },
+    );
+    if (!out) return null;
+    const { found, saved, plan, nonCash, pending } = out;
+
+    const people = await prisma.cashShift.findUnique({
+      where: { id: found.id },
+      select: { employee: { select: { name: true, publicId: true, role: true } }, branch: { select: { name: true } } },
+    });
+    const employeeName = people?.employee.name ?? "the executive";
+    const awaiting = plan.kind === "AWAITING_VERIFICATION";
+
+    await auditService.log({
+      actorName: "System",
+      actorRole: "ADMIN",
+      actorBranchId: found.branchId,
+      action: "AUTO_CLOSE_CASH_SHIFT",
+      category: AuditCategory.PAYMENT,
+      severity: awaiting ? "WARNING" : "INFO",
+      description: awaiting
+        ? `Cash shift of ${employeeName} closed automatically at the end of the day with ₹${plan.expectedTotal} cash to hand over — awaiting the branch manager's verify & close.`
+        : `Cash shift of ${employeeName} closed automatically at the end of the day — no cash in the shift (non-cash ₹${money(nonCash)}).`,
+      entity: "CashShift",
+      entityId: found.publicId,
+      before: { status: "OPEN" },
+      after: {
+        status: saved.status,
+        autoClosed: true,
+        awaitingVerification: awaiting,
+        openingCash: money(dec(found.openingCash)),
+        cashCollected: plan.cashCollected,
+        cashRefunded: plan.cashRefunded,
+        expectedTotal: plan.expectedTotal,
+        nonCashCollected: money(nonCash),
+        unconfirmedPayments: pending,
+      },
+    }).catch((err) => console.error("[cashShift.autoClose] audit error:", err));
+
+    void notifyEvents.shiftAutoClosed({ shiftId: found.id });
+
+    return { shift: saved, kind: plan.kind };
+  }
+
+  /** OPEN shifts opened before the cutoff (the auto-close worker's candidates). */
+  async findDueForAutoClose(cutoff: Date, limit = 200): Promise<Array<{ id: number; publicId: string }>> {
+    return prisma.cashShift.findMany({
+      where: { status: "OPEN", openedAt: { lt: cutoff } },
+      select: { id: true, publicId: true },
+      orderBy: { openedAt: "asc" },
+      take: limit,
+    });
+  }
+
   async reconcile(publicId: string, discrepancyExplanation: string, actor: ActorContext): Promise<CashShift> {
     const shift = await prisma.cashShift.findUnique({ where: { publicId } });
     if (!shift) throw new CashShiftError(StatusCode.NOT_FOUND, "SHIFT_NOT_FOUND", "Cash shift not found.");
@@ -649,6 +779,14 @@ class CashShiftService {
         StatusCode.BAD_REQUEST,
         "SHIFT_NOT_FLAGGED",
         "Only DISCREPANCY_FLAGGED shifts can be reconciled.",
+      );
+    }
+    // Auto-closed at day end with cash: the manager must count it (Verify & close), not just explain
+    if (isAwaitingVerification(shift)) {
+      throw new CashShiftError(
+        StatusCode.CONFLICT,
+        "SHIFT_LOCKED",
+        "This shift was closed automatically at the end of the day and its cash is not verified yet. Use Verify & close to record the cash received.",
       );
     }
     // A shift the manager closed carries the manager's note already and is read-only
@@ -752,11 +890,15 @@ class CashShiftService {
   /** OPEN shifts use live totals; closed ones their close-time snapshots. */
   private toView(s: ShiftRecord, live: LiveTotals): ShiftView {
     const isOpen = s.status === "OPEN";
+    // Auto-closed with cash, not verified yet: figures stay live (a confirm/reject/void still moves them)
+    const awaiting = isAwaitingVerification(s);
+    const liveFigures = isOpen || awaiting;
     const opening = dec(s.openingCash);
-    const collected = isOpen ? live.cashIn : dec(s.cashCollected);
-    const refunded = isOpen ? live.cashOut : dec(s.cashRefunded);
+    const collected = liveFigures ? live.cashIn : dec(s.cashCollected);
+    const refunded = liveFigures ? live.cashOut : dec(s.cashRefunded);
     const breakdown = opening.add(collected).sub(refunded);
-    const expected = isOpen ? breakdown : dec(s.expectedTotal);
+    const expected = liveFigures ? breakdown : dec(s.expectedTotal);
+    const settled = !isOpen && !awaiting;
     return {
       publicId: s.publicId,
       status: s.status,
@@ -771,8 +913,8 @@ class CashShiftService {
       cashCollected: money(collected),
       cashRefunded: money(refunded),
       expectedClosing: money(expected),
-      closingCash: isOpen ? null : money(dec(s.actualTotal)),
-      variance: isOpen ? null : money(dec(s.discrepancy)),
+      closingCash: settled ? money(dec(s.actualTotal)) : null,
+      variance: settled ? money(dec(s.discrepancy)) : null,
       pendingCash: money(live.pendingCash),
       confirmedCash: money(live.confirmedCash),
       rejectedCash: money(live.rejectedCash),
@@ -786,20 +928,23 @@ class CashShiftService {
       // doesn't follow from opening + collected − refunded, or the stored
       // variance doesn't follow from counted − expected (the old confirmCash
       // bumped expectedTotal after close without recomputing the variance).
-      legacyVariance: !isOpen && isLegacyClose(s, breakdown),
+      legacyVariance: settled && isLegacyClose(s, breakdown),
       expectedCash: money(expected),
-      cashReceived: isOpen ? null : money(dec(s.actualTotal)),
-      difference: isOpen ? null : money(dec(s.discrepancy)),
-      result: isOpen ? null : dec(s.discrepancy).isZero() ? "MATCHED" : "MISMATCH",
+      cashReceived: settled ? money(dec(s.actualTotal)) : null,
+      difference: settled ? money(dec(s.discrepancy)) : null,
+      result: !settled ? null : dec(s.discrepancy).isZero() ? "MATCHED" : "MISMATCH",
       nonCashCollected: money(live.nonCashIn),
       nonCashRefunded: money(live.nonCashOut),
       totalCollected: money(collected.add(live.nonCashIn)),
       paymentCount: live.paymentCount,
-      closedByName: isOpen ? null : (s.closedBy?.name ?? s.employee.name),
-      closedByPublicId: isOpen ? null : (s.closedBy?.publicId ?? s.employee.publicId),
+      closedByName: isOpen ? null : (s.closedBy?.name ?? (s.autoClosedAt ? AUTO_CLOSED_BY : s.employee.name)),
+      closedByPublicId: isOpen ? null : (s.closedBy?.publicId ?? (s.autoClosedAt ? null : s.employee.publicId)),
       closedByManager: !!s.closedById && s.closedById !== s.employeeId,
-      closedBySelf: !isOpen && (!s.closedById || s.closedById === s.employeeId),
+      closedBySelf: !isOpen && !s.autoClosedAt && (!s.closedById || s.closedById === s.employeeId),
       selfClosedNoCash: !isOpen && s.closedById === s.employeeId,
+      autoClosed: !!s.autoClosedAt,
+      autoClosedAt: s.autoClosedAt ?? null,
+      awaitingVerification: awaiting,
     };
   }
 
@@ -1007,6 +1152,17 @@ class CashShiftService {
       where: { branchId, status: "OPEN" },
       select: { id: true, openingCash: true },
     });
+    // Auto-closed at day end, cash not yet handed over: still with the fleet
+    const awaitingRows = await prisma.cashShift.findMany({
+      where: { branchId, ...AWAITING_WHERE },
+      select: { id: true, openingCash: true },
+    });
+    const awaitingLive = await this.liveTotals(awaitingRows.map((o) => o.id));
+    let awaitingCash = ZERO;
+    for (const o of awaitingRows) {
+      const t = awaitingLive.get(o.id) ?? EMPTY_TOTALS;
+      awaitingCash = awaitingCash.add(dec(o.openingCash)).add(t.cashIn).sub(t.cashOut);
+    }
     const live = await this.liveTotals(open.map((o) => o.id));
     let cashWithFleet = ZERO;
     let nonCashWithFleet = ZERO;
@@ -1015,6 +1171,7 @@ class CashShiftService {
       cashWithFleet = cashWithFleet.add(dec(o.openingCash)).add(t.cashIn).sub(t.cashOut);
       nonCashWithFleet = nonCashWithFleet.add(t.nonCashIn);
     }
+    cashWithFleet = cashWithFleet.add(awaitingCash);
 
     const [closedToday, mismatches] = await Promise.all([
       prisma.cashShift.aggregate({
@@ -1031,6 +1188,7 @@ class CashShiftService {
           branchId,
           status: { not: "OPEN" },
           discrepancy: { not: 0 },
+          NOT: AWAITING_WHERE,
           closedAt: { gte: fromDay.toJSDate(), lt: toDay.plus({ days: 1 }).toJSDate() },
         },
       }),
@@ -1039,6 +1197,8 @@ class CashShiftService {
     return {
       openShifts: open.length,
       cashWithFleet: money(cashWithFleet),
+      // Additive (Nov 2026): auto-closed at day end, cash awaiting the manager's verify & close (in cashWithFleet)
+      awaitingVerification: { count: awaitingRows.length, cash: money(awaitingCash) },
       nonCashWithFleet: money(nonCashWithFleet),
       closedToday: { count: closedToday._count._all, cashReceived: money(dec(closedToday._sum.actualTotal)) },
       mismatches,
@@ -1159,20 +1319,28 @@ class CashShiftService {
     if (openNow || filters.status === "OPEN") statuses = ["OPEN"];
     else if (filters.status === "ENDED") statuses = ["CLOSED", "DISCREPANCY_FLAGGED"];
     else if (filters.status) statuses = [filters.status];
-    if (statuses) {
+    // The open list also carries shifts auto-closed at day end whose cash the
+    // manager still has to verify (Nov 2026) — the cash is still to be handed over
+    const withAwaiting = statuses?.length === 1 && statuses[0] === "OPEN";
+    if (statuses && withAwaiting) {
+      where.OR = [{ status: "OPEN" }, AWAITING_WHERE];
+      sql.push(Prisma.sql`(s."status"::text = 'OPEN' OR ${awaitingSql("s")})`);
+    } else if (statuses) {
       where.status = { in: statuses };
       sql.push(Prisma.sql`s."status"::text IN (${Prisma.join(statuses)})`);
     }
-    // Matched / Mismatch: closed shifts by their stored difference
+    // Matched / Mismatch: closed shifts by their stored difference (not the
+    // auto-closed ones still awaiting the manager's count: neither yet)
     if (!openNow && filters.result) {
       const mismatch = filters.result === "MISMATCH";
       where.AND = [
         { status: { not: "OPEN" } },
         mismatch ? { discrepancy: { not: 0 } } : { discrepancy: 0 },
+        { NOT: AWAITING_WHERE },
       ];
       sql.push(mismatch
-        ? Prisma.sql`s."status" <> 'OPEN' AND s."discrepancy" <> 0`
-        : Prisma.sql`s."status" <> 'OPEN' AND s."discrepancy" = 0`);
+        ? Prisma.sql`s."status" <> 'OPEN' AND s."discrepancy" <> 0 AND NOT ${awaitingSql("s")}`
+        : Prisma.sql`s."status" <> 'OPEN' AND s."discrepancy" = 0 AND NOT ${awaitingSql("s")}`);
     }
 
     // A shift belongs to the IST calendar date it opened on. "Open now"
@@ -1231,7 +1399,8 @@ class CashShiftService {
     const rows = await prisma.$queryRaw<Array<Record<string, any>>>(Prisma.sql`
       WITH f AS (
         SELECT s."id", s."status"::text AS "status", s."openingCash", s."cashCollected", s."cashRefunded",
-               s."expectedTotal", s."actualTotal", s."discrepancy",
+               s."expectedTotal", s."actualTotal", s."discrepancy", s."autoClosedAt", s."closedById",
+               ${awaitingSql("s")} AS "awaiting",
                to_char(timezone(${SYSTEM_TIMEZONE}, timezone('UTC', s."openedAt")), 'YYYY-MM-DD') AS "day"
         FROM "CashShift" s
         WHERE ${sqlWhere}
@@ -1242,18 +1411,20 @@ class CashShiftService {
         COUNT(f."id")::int AS "shiftCount",
         (COUNT(f."id") FILTER (WHERE f."status" = 'OPEN'))::int AS "openCount",
         (COUNT(f."id") FILTER (WHERE f."status" = 'CLOSED'))::int AS "closedCount",
-        (COUNT(f."id") FILTER (WHERE f."status" = 'DISCREPANCY_FLAGGED'))::int AS "flaggedCount",
+        (COUNT(f."id") FILTER (WHERE f."status" = 'DISCREPANCY_FLAGGED' AND NOT f."awaiting"))::int AS "flaggedCount",
+        (COUNT(f."id") FILTER (WHERE f."awaiting"))::int AS "awaitingVerificationCount",
         COALESCE(SUM(f."openingCash"), 0) AS "openingCash",
-        COALESCE(SUM(CASE WHEN f."status" = 'OPEN' THEN COALESCE(l."cashIn", 0) ELSE f."cashCollected" END), 0) AS "cashCollected",
-        COALESCE(SUM(CASE WHEN f."status" = 'OPEN' THEN COALESCE(l."cashOut", 0) ELSE f."cashRefunded" END), 0) AS "cashRefunded",
-        COALESCE(SUM(CASE WHEN f."status" = 'OPEN'
+        -- Open shifts and auto-closed ones awaiting the manager's verify: live figures
+        COALESCE(SUM(CASE WHEN f."status" = 'OPEN' OR f."awaiting" THEN COALESCE(l."cashIn", 0) ELSE f."cashCollected" END), 0) AS "cashCollected",
+        COALESCE(SUM(CASE WHEN f."status" = 'OPEN' OR f."awaiting" THEN COALESCE(l."cashOut", 0) ELSE f."cashRefunded" END), 0) AS "cashRefunded",
+        COALESCE(SUM(CASE WHEN f."status" = 'OPEN' OR f."awaiting"
           THEN f."openingCash" + COALESCE(l."cashIn", 0) - COALESCE(l."cashOut", 0)
           ELSE f."expectedTotal" END), 0) AS "expectedClosing",
-        COALESCE(SUM(f."actualTotal") FILTER (WHERE f."status" <> 'OPEN'), 0) AS "closingCash",
+        COALESCE(SUM(f."actualTotal") FILTER (WHERE f."status" <> 'OPEN' AND NOT f."awaiting"), 0) AS "closingCash",
         -- Old-rule variances (stale after a post-close confirm) aren't summed;
         -- legacyCount says how many closed shifts were left out.
-        COALESCE(SUM(f."discrepancy") FILTER (WHERE f."status" <> 'OPEN' AND NOT ${LEGACY_CLOSE_SQL}), 0) AS "variance",
-        (COUNT(f."id") FILTER (WHERE ${LEGACY_CLOSE_SQL}))::int AS "legacyCount",
+        COALESCE(SUM(f."discrepancy") FILTER (WHERE f."status" <> 'OPEN' AND NOT f."awaiting" AND NOT ${LEGACY_CLOSE_SQL}), 0) AS "variance",
+        (COUNT(f."id") FILTER (WHERE NOT f."awaiting" AND ${LEGACY_CLOSE_SQL}))::int AS "legacyCount",
         COALESCE(SUM(l."pendingCash"), 0) AS "pendingCash",
         COALESCE(SUM(l."upiCollected"), 0) AS "upiCollected",
         COALESCE(SUM(l."cardCollected"), 0) AS "cardCollected"
@@ -1276,6 +1447,7 @@ class CashShiftService {
       upiCollected: money(dec(r?.upiCollected)),
       cardCollected: money(dec(r?.cardCollected)),
       legacyCount: Number(r?.legacyCount ?? 0),
+      awaitingVerificationCount: Number(r?.awaitingVerificationCount ?? 0),
     });
 
     const daily = rows
@@ -1298,7 +1470,7 @@ class CashShiftService {
     const scopeWhere: Prisma.CashShiftWhereInput =
       scope.branchId !== undefined ? { branchId: scope.branchId } : { employeeId: scope.employeeId };
 
-    const [rows, total, openNowCount, aggregates] = await Promise.all([
+    const [rows, total, openNowCount, aggregates, awaitingVerificationCount] = await Promise.all([
       prisma.cashShift.findMany({
         where,
         include: SHIFT_PEOPLE_INCLUDE,
@@ -1313,6 +1485,7 @@ class CashShiftService {
       prisma.cashShift.count({ where }),
       prisma.cashShift.count({ where: { ...scopeWhere, status: "OPEN" } }),
       this.aggregateByDay(sqlWhere),
+      prisma.cashShift.count({ where: { ...scopeWhere, ...AWAITING_WHERE } }),
     ]);
 
     const live = await this.liveTotals(rows.map((r) => r.id));
@@ -1329,6 +1502,7 @@ class CashShiftService {
       dailyTotals: aggregates.daily,
       summary: aggregates.summary,
       openNowCount,
+      awaitingVerificationCount,
       filters: echo,
     };
   }

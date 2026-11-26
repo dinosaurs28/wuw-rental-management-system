@@ -122,7 +122,8 @@
           "defaultChannel": "default"
         }
       ],
-      "./plugins/withUpiQueries.js"
+      "./plugins/withUpiQueries.js",
+      "./plugins/withOptionalScreenFeatures.js"
     ],
     "experiments": {
       "typedRoutes": true

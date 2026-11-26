@@ -38,6 +38,11 @@ export interface CashShiftRow {
   closedByManager: boolean;
   /** Nov 2026: the fleet member closed it themselves — no cash was collected. */
   selfClosedNoCash?: boolean;
+  /** Nov 2026: closed by the system at the end of the IST day. */
+  autoClosed?: boolean;
+  autoClosedAt?: string | null;
+  /** Auto-closed with cash still to hand over — the manager verifies & closes it like an open shift. */
+  awaitingVerification?: boolean;
   discrepancyExplanation: string | null;
   legacyVariance: boolean;
 }
@@ -91,6 +96,8 @@ export interface CashShiftCards {
   closedToday: { count: number; cashReceived: string };
   mismatches: number;
   range: { from: string; to: string };
+  /** Nov 2026: auto-closed shifts whose cash is still to be verified (their cash is in cashWithFleet). */
+  awaitingVerification?: { count: number; cash: string };
 }
 
 export interface CashShiftListFilters {

@@ -25,6 +25,7 @@ import { initDelayedCashAlertWorker } from "./jobs/delayedCashAlert.worker.js";
 import { initInsuranceAlertWorker } from "./jobs/insurance-alert.worker.js";
 import { initNoShowAutoCancelWorker } from "./jobs/noShowAutoCancel.worker.js";
 import { initNotificationWorker } from "./jobs/notification.worker.js";
+import { initCashShiftAutoCloseWorker } from "./jobs/cashShiftAutoClose.worker.js";
 import insuranceAlertRouter from "./routes/insurance-alert/insurance-alert.routes.js";
 import { hideFestivalPricing } from "./middlewares/hideFestivalPricing.middleware.js";
 import fs from "fs";
@@ -50,6 +51,7 @@ initDelayedCashAlertWorker();
 initInsuranceAlertWorker();
 initNoShowAutoCancelWorker();
 initNotificationWorker();
+initCashShiftAutoCloseWorker();
 
 const app = express();
 

@@ -175,7 +175,7 @@ const extensionMeta: Record<ExtensionStatus, { label: string; classes: string }>
     classes: "bg-orange-50 text-orange-700 border border-orange-200",
   },
   PAYMENT_COLLECTED: {
-    label: "Cash Collected",
+    label: "Awaiting confirmation",
     classes: "bg-yellow-50 text-yellow-700 border border-yellow-200",
   },
   CONFIRMED: {

@@ -94,7 +94,11 @@ function paymentType(p: CashShiftPayment): string {
   return "—";
 }
 
-function ResultBadge({ result }: { result: ShiftResult | null }) {
+/** An open shift, or one auto-closed at day end whose cash the manager still has to verify (Nov 2026). */
+const canVerify = (s: { isOpen: boolean; awaitingVerification?: boolean }) => s.isOpen || !!s.awaitingVerification;
+
+function ResultBadge({ result, awaiting }: { result: ShiftResult | null; awaiting?: boolean }) {
+  if (awaiting) return <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Awaiting verification</span>;
   if (!result) return <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">Open</span>;
   return result === "MATCHED" ? (
     <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Matched</span>
@@ -186,6 +190,8 @@ function ShiftSheet({
             {view
               ? view.isOpen
                 ? `Open since ${formatIstDateTime(view.openedAt)} · ${durationLabel(view.openedAt)}`
+                : view.awaitingVerification
+                ? `${formatIstDateTime(view.openedAt)} – auto-closed ${formatIstDateTime(view.closedAt)} (end of day) · cash not verified yet`
                 : `${formatIstDateTime(view.openedAt)} – ${formatIstDateTime(view.closedAt)} · closed by ${view.closedByName ?? "—"}`
               : "Shift payments"}
           </SheetDescription>
@@ -203,7 +209,19 @@ function ShiftSheet({
           </div>
         ) : (
           <div className="space-y-5 p-5">
-            {!view.isOpen && (
+            {view.awaitingVerification && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="font-semibold">Closed automatically at the end of the day</span>
+                  <ResultBadge result={null} awaiting />
+                </div>
+                <p className="text-xs">
+                  No more payments can be added to this shift. {formatMoney(view.expectedCash)} cash is still to be handed over —
+                  count it and use Verify &amp; close to confirm the payments and record the cash received.
+                </p>
+              </div>
+            )}
+            {!view.isOpen && !view.awaitingVerification && (
               <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-xs font-semibold text-neutral-600">
@@ -224,6 +242,10 @@ function ShiftSheet({
                 )}
                 {view.selfClosedNoCash ? (
                   <p className="mt-2 text-[11px] text-neutral-500">Closed by the fleet member — no cash was collected in this shift.</p>
+                ) : view.autoClosed && !view.closedByManager ? (
+                  <p className="mt-2 text-[11px] text-neutral-500">Closed automatically at the end of the day — no cash was collected in this shift.</p>
+                ) : view.autoClosed ? (
+                  <p className="mt-2 text-[11px] text-neutral-500">Closed automatically at the end of the day, then verified by {view.closedByName ?? "the manager"}.</p>
                 ) : !view.closedByManager && (
                   <p className="mt-2 text-[11px] text-neutral-500">Closed by the fleet member (before managers closed shifts).</p>
                 )}
@@ -243,7 +265,7 @@ function ShiftSheet({
                       <th className="px-3 py-2 font-medium">Mode</th>
                       <th className="px-3 py-2 font-medium">Booking</th>
                       <th className="px-3 py-2 font-medium">Time</th>
-                      {view.isOpen && <th className="px-3 py-2" />}
+                      {canVerify(view) && <th className="px-3 py-2" />}
                     </tr>
                   </thead>
                   <tbody>
@@ -266,7 +288,7 @@ function ShiftSheet({
                           <td className="px-3 py-2">{paymentMode(t)}</td>
                           <td className="px-3 py-2 font-mono text-xs">#{t.bookingPublicId.slice(-8).toUpperCase()}</td>
                           <td className="px-3 py-2 text-xs">{formatIstDateTime(t.collectedAt ?? t.createdAt)}</td>
-                          {view.isOpen && (
+                          {canVerify(view) && (
                             <td className="px-3 py-2 text-right">
                               {t.status === "COLLECTED" && (
                                 <button
@@ -298,14 +320,14 @@ function ShiftSheet({
                   </tbody>
                 </table>
               </div>
-              {view.isOpen && (
+              {canVerify(view) && (
                 <p className="mt-2 text-[11px] text-neutral-500">
                   Closing the shift confirms every pending payment in it. Reject a payment first if the money wasn't received.
                 </p>
               )}
             </div>
 
-            {view.isOpen && (
+            {canVerify(view) && (
               <div className="sticky bottom-0 -mx-5 border-t border-neutral-100 bg-white px-5 py-3">
                 <Button className="w-full" onClick={() => onVerify(view)}>Verify &amp; close</Button>
               </div>
@@ -441,7 +463,7 @@ function VerifyCloseSheet({
   const receivedP = hasReceived ? toPaise(received) : 0;
   const diffP = receivedP - expectedP;
   const noteRequired = hasReceived && diffP !== 0;
-  const canSubmit = !!view && view.isOpen && hasReceived && receivedP >= 0 && (!noteRequired || note.trim().length > 0);
+  const canSubmit = !!view && canVerify(view) && hasReceived && receivedP >= 0 && (!noteRequired || note.trim().length > 0);
 
   const submit = async () => {
     if (!view || !canSubmit) return;
@@ -472,7 +494,9 @@ function VerifyCloseSheet({
           <SheetTitle className="pr-6 text-[15px]">Verify &amp; close{view ? ` — ${view.employeeName}` : ""}</SheetTitle>
           <SheetDescription className="text-xs">
             {view
-              ? `Opened ${formatIstDateTime(view.openedAt)} · closes now (${formatIstDateTime(new Date(now).toISOString())}) · ${durationLabel(view.openedAt, now)}`
+              ? view.awaitingVerification
+                ? `Opened ${formatIstDateTime(view.openedAt)} · auto-closed ${formatIstDateTime(view.closedAt)} (end of day) · verify the cash handed over`
+                : `Opened ${formatIstDateTime(view.openedAt)} · closes now (${formatIstDateTime(new Date(now).toISOString())}) · ${durationLabel(view.openedAt, now)}`
               : "Count the cash handed over and close the shift"}
           </SheetDescription>
         </SheetHeader>
@@ -487,7 +511,7 @@ function VerifyCloseSheet({
           <div className="space-y-3 p-5">
             {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-10 animate-pulse rounded-lg bg-neutral-100" />)}
           </div>
-        ) : !view.isOpen ? (
+        ) : !canVerify(view) ? (
           <div className="flex flex-col items-center gap-2 px-5 py-16 text-center">
             <Lock className="h-6 w-6 text-neutral-400" />
             <p className="text-sm text-neutral-600">This shift is already closed.</p>
@@ -769,7 +793,7 @@ export function CashShiftTab({
     <div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card icon={Users} label="Open shifts" value={cards ? String(cards.openShifts) : "—"} sub="Fleet members with an open shift" />
-        <Card icon={Wallet} label="Cash with fleet members" value={cards ? formatMoney(cards.cashWithFleet) : "—"} sub="Expected cash across open shifts" />
+        <Card icon={Wallet} label="Cash with fleet members" value={cards ? formatMoney(cards.cashWithFleet) : "—"} sub={cards?.awaitingVerification?.count ? `Open shifts + ${cards.awaitingVerification.count} auto-closed awaiting verification` : "Expected cash across open shifts"} />
         <Card
           icon={CalendarCheck}
           label="Closed today"
@@ -852,9 +876,14 @@ export function CashShiftTab({
               )}
               {openRows.map((r) => (
                 <tr key={r.publicId} className="cursor-pointer border-t border-neutral-100 hover:bg-neutral-50" onClick={() => onShiftIdChange(r.publicId)}>
-                  <td className="px-4 py-3 font-medium text-neutral-900">{r.employeeName}</td>
+                  <td className="px-4 py-3 font-medium text-neutral-900">
+                    {r.employeeName}
+                    {r.awaitingVerification && <div className="mt-1"><ResultBadge result={null} awaiting /></div>}
+                  </td>
                   <td className="px-4 py-3 text-neutral-600">{formatIstDateTime(r.openedAt)}</td>
-                  <td className="px-4 py-3 tabular-nums text-neutral-600">{durationLabel(r.openedAt, now)}</td>
+                  <td className="px-4 py-3 tabular-nums text-neutral-600">
+                    {r.awaitingVerification ? `Auto-closed ${formatIstDateTime(r.closedAt)}` : durationLabel(r.openedAt, now)}
+                  </td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.paymentCount}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{formatMoney(r.cashCollected)}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{formatMoney(r.nonCashCollected)}</td>
@@ -893,7 +922,7 @@ export function CashShiftTab({
                   <td className="px-4 py-3 text-right tabular-nums">{formatMoney(r.expectedCash)}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{formatMoney(r.cashReceived)}</td>
                   <td className="px-4 py-3 text-right"><SignedMoney value={r.difference} /></td>
-                  <td className="px-4 py-3"><ResultBadge result={r.result} /></td>
+                  <td className="px-4 py-3"><ResultBadge result={r.result} awaiting={r.awaitingVerification} /></td>
                 </tr>
               ))}
             </tbody>
